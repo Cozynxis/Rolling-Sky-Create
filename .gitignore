@@ -1,0 +1,7 @@
+# Keep extracted third-party game binaries and temporary analysis private
+/workspace/
+/dist/
+/build/
+/*.log
+__pycache__/
+*.pyc
