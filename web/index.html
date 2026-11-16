@@ -84,6 +84,39 @@
 .music-hint{font-size:12px;color:#c9b1d8;margin:0 30px 10px;line-height:1.5}
 .fps-display{position:fixed;right:15px;top:12px;z-index:9;font:13px monospace;color:#e7c8ff;background:#160b25a8;padding:6px 9px;border-radius:8px;pointer-events:none}
 @media(max-width:540px){.settings-head{padding:22px 18px 15px}.settings-content{padding:5px 18px 16px}.settings-tabs{padding:10px}.settings-foot{padding:14px 18px 20px}.settings-row{gap:9px}.settings-row strong{font-size:13px}.settings-row small{font-size:11px}.settings-row input[type=range]{width:100px}.settings-row select{max-width:120px}}
+
+/* Refined settings overlay — matches the original purple mountain menu */
+.modal-shade{background:rgba(8,3,16,.77);backdrop-filter:blur(14px) saturate(1.2)}
+.modal.settings-modal{width:min(780px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;display:flex;flex-direction:column;border:1px solid #b58bc37a;border-radius:27px;background:linear-gradient(160deg,#2b193b 0%,#1b1028 55%,#140b1f 100%);box-shadow:0 30px 100px #06030a99,0 0 55px #7f48a526;padding:0}
+.settings-modal #modal-body{display:flex;flex-direction:column;min-height:0;overflow:hidden;flex:1}
+.settings-modal .close{z-index:4;top:19px;right:20px;border-radius:50%;width:38px;height:38px;padding:0;background:#ffffff12;color:#e8d9ef;transition:background .2s,transform .2s}
+.settings-modal .close:hover{background:#ffffff29;transform:rotate(90deg)}
+.settings-head{position:relative;flex-shrink:0;padding:30px 35px 20px;background:transparent;border-bottom:0}
+.settings-head:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 15% 0%,#8f5caa30,transparent 70%)}
+.settings-head h2{position:relative;font-size:clamp(26px,3vw,35px);letter-spacing:.08em;font-weight:300;margin:0 0 8px}
+.settings-head p{position:relative;font-size:13px;color:#d5c2e0}
+.settings-tabs{display:flex;flex-shrink:0;gap:8px;padding:8px 30px 16px;border-bottom:1px solid #ffffff18}
+.settings-tab{flex:1;min-width:0;border:1px solid #ffffff12!important;border-radius:13px!important;background:#ffffff08!important;padding:12px 6px!important;color:#c9b2d7!important;font-size:13px;cursor:pointer;transition:transform .2s,background .2s,border-color .2s!important}
+.settings-tab:hover{transform:translateY(-2px);background:#a56ac52a!important}
+.settings-tab[aria-selected=true]{color:#fff!important;background:linear-gradient(130deg,#8b58ab77,#5e367d88)!important;border-color:#c394dd7a!important;box-shadow:inset 0 1px #ffffff1c,0 4px 18px #b773d01a}
+.settings-content{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#9564aa transparent;padding:9px 35px 16px}
+.settings-section-title{font-size:11px;letter-spacing:.2em;color:#d5a7ec;margin:18px 0 9px;font-weight:700}
+.settings-row{padding:16px 2px;border-bottom:1px solid #ffffff13;transition:background .2s}
+.settings-row:hover{background:#ffffff06}
+.settings-row strong{font-size:14px;font-weight:600}.settings-row small{font-size:12px;color:#c4accf}
+.settings-row select{border-radius:11px;background:#120b1d;border:1px solid #a47bb0;color:#f7ebff;padding:10px 12px;min-width:120px;cursor:pointer}
+.settings-row input[type=range]{accent-color:#bf85db}
+.settings-row input[type=checkbox]{background:#544060;width:47px;height:27px}
+.settings-row input[type=checkbox]:before{width:19px;height:19px}
+.settings-row input[type=checkbox]:checked{background:#a96bc7}
+.settings-row input[type=checkbox]:checked:before{transform:translateX(20px)}
+.settings-foot{flex-shrink:0;padding:17px 35px 23px;border-top:1px solid #ffffff15;background:#1a1026;display:flex;justify-content:space-between}
+.settings-foot button{padding:11px 20px;background:#6f438b;border:1px solid #aa7ac3;border-radius:12px;cursor:pointer;transition:transform .2s,background .2s}
+.settings-foot button:hover{transform:translateY(-2px);background:#915ab1}
+.settings-foot button#reset-settings{background:#ffffff0b;border-color:#ffffff26}
+.settings-foot button#reset-settings:hover{background:#ffffff20}
+.settings-modal .music-hint{margin:13px 0 5px;padding:12px 14px;border-radius:12px;background:#9c6bc51a;color:#d8c3e4}
+@media(max-width:560px){.modal.settings-modal{max-height:90vh;border-radius:20px}.settings-head{padding:25px 20px 15px}.settings-tabs{padding:6px 14px 12px;gap:5px}.settings-tab{font-size:11px;padding:10px 3px!important}.settings-content{padding:8px 20px 12px}.settings-foot{padding:12px 20px 18px}.settings-row{gap:8px}.settings-row select{min-width:90px}}
 </style>
 </head>
 <body>
@@ -115,13 +148,15 @@ const defaults={master:70,music:55,sfx:65,mute:false,musicOn:true,quality:'high'
 let settings={...defaults};try{const stored=JSON.parse(localStorage.getItem('rsc-settings')||'{}');for(const k of Object.keys(defaults)){if(typeof stored[k]===typeof defaults[k])settings[k]=stored[k]}}catch{}
 const scene=document.querySelector('.scene'),fpsEl=document.getElementById('fps-display');
 let lastFrame=0,fpsSamples=[],fpsTicks=0,settingsTab='audio',audioContext=null,musicGain=null,masterGain=null,sfxGain=null,musicTimer=null,nextNote=0,noteIndex=0,activeMusic=false;
-const melody=[0,3,7,10,7,3,5,8,12,8,5,3,0,5,7,10,12,10,7,5,3,7,10,15,12,10,7,5,0,3,7,10];
-const bass=[0,0,-2,-2,-4,-4,-2,-2];
+// The user's custom soundtrack is loaded from web/assets/menu-music.mp3.
+// Browsers require a click/tap before audio playback can begin.
+const menuMusic=new Audio('./assets/menu-music.mp3');menuMusic.loop=true;menuMusic.preload='auto';
+let soundtrackAvailable=true;
+menuMusic.addEventListener('error',()=>{soundtrackAvailable=false;const status=document.querySelector('#music-status');if(status)status.textContent='Upload your track as web/assets/menu-music.mp3 to enable the custom soundtrack.'});
 function save(){try{localStorage.setItem('rsc-settings',JSON.stringify(settings))}catch{}}
-function volume(){if(!audioContext)return;masterGain.gain.setTargetAtTime(settings.mute?0:settings.master/100,audioContext.currentTime,.035);musicGain.gain.setTargetAtTime(settings.musicOn?settings.music/100:0,audioContext.currentTime,.035);sfxGain.gain.setTargetAtTime(settings.sfx/100,audioContext.currentTime,.035)}
-function startAudio(){try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioContext.createGain();musicGain=audioContext.createGain();sfxGain=audioContext.createGain();musicGain.connect(masterGain);sfxGain.connect(masterGain);masterGain.connect(audioContext.destination);nextNote=audioContext.currentTime+.06}audioContext.resume();volume();if(!musicTimer){musicTimer=setInterval(scheduleMusic,100);scheduleMusic()}activeMusic=true}catch(e){console.warn('Audio unavailable',e)}}
-function playTone(freq,when,duration,gain,type='sine',target=musicGain){if(!audioContext||!target)return;const osc=audioContext.createOscillator(),env=audioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,when);env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),when+.025);env.gain.exponentialRampToValueAtTime(.0001,when+duration);osc.connect(env);env.connect(target);osc.start(when);osc.stop(when+duration+.03)}
-function scheduleMusic(){if(!audioContext||audioContext.state!=='running')return;const beat=.32;while(nextNote<audioContext.currentTime+.45){const step=noteIndex%melody.length,root=220;const semitone=melody[step];playTone(root*Math.pow(2,semitone/12),nextNote,beat*.85,.095,'triangle');if(step%2===0)playTone(110*Math.pow(2,bass[Math.floor(noteIndex/4)%bass.length]/12),nextNote,beat*1.7,.07,'sine');if(step%4===0)playTone(440*Math.pow(2,melody[step]/12),nextNote,beat*2.8,.024,'sine');nextNote+=beat;noteIndex++}}
+function volume(){if(audioContext){masterGain.gain.setTargetAtTime(settings.mute?0:settings.master/100,audioContext.currentTime,.035);sfxGain.gain.setTargetAtTime(settings.sfx/100,audioContext.currentTime,.035)}menuMusic.volume=Math.min(1,Math.max(0,(settings.mute?0:settings.master/100)*(settings.music/100)));if(!settings.musicOn)menuMusic.pause();else if(activeMusic&&soundtrackAvailable&&menuMusic.paused)menuMusic.play().catch(()=>{})}
+function startAudio(){try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioContext.createGain();sfxGain=audioContext.createGain();sfxGain.connect(masterGain);masterGain.connect(audioContext.destination)}audioContext.resume();activeMusic=true;volume()}catch(e){console.warn('Audio unavailable',e)}}
+function playTone(freq,when,duration,gain,type='sine',target=sfxGain){if(!audioContext||!target)return;const osc=audioContext.createOscillator(),env=audioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,when);env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),when+.025);env.gain.exponentialRampToValueAtTime(.0001,when+duration);osc.connect(env);env.connect(target);osc.start(when);osc.stop(when+duration+.03)}
 function uiSound(){if(!audioContext||audioContext.state!=='running')return;playTone(660,audioContext.currentTime,.09,.06,'sine',sfxGain)}
 function setMotion(v){animation=v&&!matchMedia('(prefers-reduced-motion: reduce)').matches;scene.classList.toggle('motion-off',!animation);cancelAnimationFrame(raf);lastFrame=0;if(animation)raf=requestAnimationFrame(draw);else draw()}
 function applySettings(){setMotion(settings.motion);scene.classList.toggle('no-parallax',!settings.parallax);scene.classList.toggle('no-glow',!settings.glow);fpsEl.hidden=!settings.showFps;const d= Math.min(devicePixelRatio||1,settings.quality==='low'?1:settings.quality==='medium'?1.5:2);canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);ctx.setTransform(d,0,0,d,0,0);const target=settings.quality==='low'?Math.min(settings.particles,55):settings.particles;while(stars.length<target)stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight*.48,r:Math.random()*1.7+.5,p:Math.random()*6.28,speed:.04+Math.random()*.14});stars.length=target;volume()}
@@ -131,7 +166,7 @@ const range=(key,min,max,unit='%')=>'<input aria-label="'+key+'" data-setting="'
 const toggle=key=>'<input aria-label="'+key+'" data-setting="'+key+'" type="checkbox" '+(settings[key]?'checked':'')+'>';
 const select=(key,values)=>'<select aria-label="'+key+'" data-setting="'+key+'">'+values.map(([v,l])=>'<option value="'+v+'" '+(String(settings[key])===String(v)?'selected':'')+'>'+l+'</option>').join('')+'</select>';
 function tabContents(){switch(settingsTab){
-case 'audio':return '<div class="settings-section-title">Sound mixer</div>'+row('master','Master volume','Overall sound level',range('master',0,100))+row('music','Music volume','Menu soundtrack',range('music',0,100))+row('sfx','UI sound effects','Button feedback',range('sfx',0,100))+row('musicOn','Menu music','Play the original looping menu melody',toggle('musicOn'))+row('mute','Mute all','Silence music and sound effects',toggle('mute'))+'<p class="music-hint">♫ Original synthesized menu track. Click anywhere to enable audio (browser autoplay policy).</p>';
+case 'audio':return '<div class="settings-section-title">Sound mixer</div>'+row('master','Master volume','Overall sound level',range('master',0,100))+row('music','Music volume','Menu soundtrack',range('music',0,100))+row('sfx','UI sound effects','Button feedback',range('sfx',0,100))+row('musicOn','Menu music','Play your custom soundtrack on repeat',toggle('musicOn'))+row('mute','Mute all','Silence music and sound effects',toggle('mute'))+'<p class="music-hint">♫ Custom soundtrack: Nirvana · <span id="music-status">Music begins after your first click. Browser autoplay rules apply.</span></p>';
 case 'graphics':return '<div class="settings-section-title">Appearance</div>'+row('quality','Render quality','Controls canvas resolution',select('quality',[['low','Low'],['medium','Medium'],['high','High']]))+row('particles','Star density','Number of visible stars',range('particles',20,200,''))+row('glow','Atmospheric glow','Soft purple vignette',toggle('glow'))+row('parallax','Mountain parallax','Subtle motion of mountain layers',toggle('parallax'));
 case 'performance':return '<div class="settings-section-title">Performance</div>'+row('fps','FPS limit','Maximum background animation refresh',select('fps',[[30,'30 FPS'],[60,'60 FPS'],[120,'120 FPS'],[144,'144 FPS'],[240,'240 FPS']]))+row('showFps','Show FPS','Live background-render FPS counter',toggle('showFps'))+row('motion','Animations','Turn off moving stars and scenery',toggle('motion'))+'<p class="music-hint">FPS limit affects this menu animation, not your monitor refresh rate. Actual FPS depends on your device.</p>';
 default:return '<div class="settings-section-title">General</div>'+row('motion','Animated menu','Enable ambient animations',toggle('motion'))+row('musicOn','Background music','Play music while in the menu',toggle('musicOn'))+row('showFps','FPS counter','Show animation performance',toggle('showFps'))}}
