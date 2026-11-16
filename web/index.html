@@ -117,6 +117,7 @@
 .settings-foot button#reset-settings:hover{background:#ffffff20}
 .settings-modal .music-hint{margin:13px 0 5px;padding:12px 14px;border-radius:12px;background:#9c6bc51a;color:#d8c3e4}
 @media(max-width:560px){.modal.settings-modal{max-height:90vh;border-radius:20px}.settings-head{padding:25px 20px 15px}.settings-tabs{padding:6px 14px 12px;gap:5px}.settings-tab{font-size:11px;padding:10px 3px!important}.settings-content{padding:8px 20px 12px}.settings-foot{padding:12px 20px 18px}.settings-row{gap:8px}.settings-row select{min-width:90px}}
+.settings-tabs{display:none!important}.settings-divider{margin-top:27px!important;padding-top:22px;border-top:1px solid #a17bb34a}.settings-content{padding-top:15px!important}.settings-modal .settings-head{padding-bottom:18px!important}.corner.right{font-size:29px;line-height:1;color:#fff}.corner.right:hover{color:#e7baff;transform:translateY(-5px) rotate(-12deg) scale(1.14)}
 </style>
 </head>
 <body>
@@ -129,7 +130,7 @@
 </svg>
 <div class="center"><h1 class="logo"><span class="first">ROLLING SKY<span class="spark">✦</span></span><span class="second">CREATE</span></h1><button class="play" id="play" aria-label="Play"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 3Q7 0 11 3L36 18Q40 20 36 23L11 38Q7 40 7 35Z"/></svg></button></div>
 <button class="corner left" id="settings" title="Settings" aria-label="Settings">⚙</button>
-<button class="corner right" id="editor" title="Level editor" aria-label="Level editor">▦</button>
+<button class="corner right" id="editor" title="Featured levels" aria-label="Featured levels">★</button>
 </main>
 <div class="fps-display" id="fps-display" hidden>-- FPS</div><div class="modal-shade" id="shade" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="close" id="close" aria-label="Close">×</button><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
 <script>
@@ -142,38 +143,43 @@ function openModal(t,html){title.textContent=t;body.innerHTML=html;shade.classLi
 function closeModal(){shade.classList.remove('open')}
 document.getElementById('close').onclick=closeModal;shade.addEventListener('click',e=>{if(e.target===shade)closeModal()});addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 document.getElementById('play').onclick=()=>openModal('Play','<p>The playable 3D levels are coming in a future update. This is the new main-menu preview.</p><button onclick="closeModal()">Back to menu</button>');
-document.getElementById('editor').onclick=()=>openModal('Level Editor','<p>The level editor is under development. You will be able to build and test your own levels here.</p><button onclick="closeModal()">Back to menu</button>');
+document.getElementById('editor').onclick=()=>openModal('Featured Levels','<p>Featured levels are coming soon. Discover hand-picked community levels here.</p><button onclick="closeModal()">Back to menu</button>');
 
-const defaults={master:70,music:55,sfx:65,mute:false,musicOn:true,quality:'high',fps:60,showFps:false,particles:105,motion:true,parallax:true,glow:true};
+const defaults={master:75,music:70,mute:false,musicOn:true,quality:'high',fps:60,showFps:false,motion:true};
 let settings={...defaults};try{const stored=JSON.parse(localStorage.getItem('rsc-settings')||'{}');for(const k of Object.keys(defaults)){if(typeof stored[k]===typeof defaults[k])settings[k]=stored[k]}}catch{}
 const scene=document.querySelector('.scene'),fpsEl=document.getElementById('fps-display');
-let lastFrame=0,fpsSamples=[],fpsTicks=0,settingsTab='audio',audioContext=null,musicGain=null,masterGain=null,sfxGain=null,musicTimer=null,nextNote=0,noteIndex=0,activeMusic=false;
-// The user's custom soundtrack is loaded from web/assets/menu-music.mp3.
-// Browsers require a click/tap before audio playback can begin.
+let lastFrame=0,fpsSamples=[],fpsTicks=0,audioContext=null,masterGain=null,sfxGain=null,activeMusic=false;
 const menuMusic=new Audio('./assets/menu-music.mp3');menuMusic.loop=true;menuMusic.preload='auto';
 let soundtrackAvailable=true;
-menuMusic.addEventListener('error',()=>{soundtrackAvailable=false;const status=document.querySelector('#music-status');if(status)status.textContent='Upload your track as web/assets/menu-music.mp3 to enable the custom soundtrack.'});
+menuMusic.addEventListener('error',()=>{soundtrackAvailable=false;updateMusicStatus()});
+menuMusic.addEventListener('canplay',()=>{soundtrackAvailable=true;updateMusicStatus()});
+function updateMusicStatus(){const el=document.querySelector('#music-status');if(el)el.textContent=soundtrackAvailable?'Nirvana · starts after your first click.':'Nirvana MP3 not found. Add web/assets/menu-music.mp3 to the repository.'}
 function save(){try{localStorage.setItem('rsc-settings',JSON.stringify(settings))}catch{}}
-function volume(){if(audioContext){masterGain.gain.setTargetAtTime(settings.mute?0:settings.master/100,audioContext.currentTime,.035);sfxGain.gain.setTargetAtTime(settings.sfx/100,audioContext.currentTime,.035)}menuMusic.volume=Math.min(1,Math.max(0,(settings.mute?0:settings.master/100)*(settings.music/100)));if(!settings.musicOn)menuMusic.pause();else if(activeMusic&&soundtrackAvailable&&menuMusic.paused)menuMusic.play().catch(()=>{})}
-function startAudio(){try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioContext.createGain();sfxGain=audioContext.createGain();sfxGain.connect(masterGain);masterGain.connect(audioContext.destination)}audioContext.resume();activeMusic=true;volume()}catch(e){console.warn('Audio unavailable',e)}}
+function volume(){if(audioContext){masterGain.gain.setTargetAtTime(settings.mute?0:settings.master/100,audioContext.currentTime,.035)}menuMusic.volume=Math.max(0,Math.min(1,(settings.mute?0:settings.master/100)*(settings.music/100)));if(!settings.musicOn)menuMusic.pause();else if(activeMusic&&soundtrackAvailable&&menuMusic.paused)menuMusic.play().catch(()=>{})}
+function startAudio(){activeMusic=true;try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioContext.createGain();sfxGain=audioContext.createGain();sfxGain.connect(masterGain);masterGain.connect(audioContext.destination)}audioContext.resume()}catch(e){console.warn('Audio unavailable',e)}volume()}
 function playTone(freq,when,duration,gain,type='sine',target=sfxGain){if(!audioContext||!target)return;const osc=audioContext.createOscillator(),env=audioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,when);env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),when+.025);env.gain.exponentialRampToValueAtTime(.0001,when+duration);osc.connect(env);env.connect(target);osc.start(when);osc.stop(when+duration+.03)}
-function uiSound(){if(!audioContext||audioContext.state!=='running')return;playTone(660,audioContext.currentTime,.09,.06,'sine',sfxGain)}
+function uiSound(){if(!audioContext||audioContext.state!=='running')return;playTone(660,audioContext.currentTime,.09,.04,'sine',sfxGain)}
 function setMotion(v){animation=v&&!matchMedia('(prefers-reduced-motion: reduce)').matches;scene.classList.toggle('motion-off',!animation);cancelAnimationFrame(raf);lastFrame=0;if(animation)raf=requestAnimationFrame(draw);else draw()}
-function applySettings(){setMotion(settings.motion);scene.classList.toggle('no-parallax',!settings.parallax);scene.classList.toggle('no-glow',!settings.glow);fpsEl.hidden=!settings.showFps;const d= Math.min(devicePixelRatio||1,settings.quality==='low'?1:settings.quality==='medium'?1.5:2);canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);ctx.setTransform(d,0,0,d,0,0);const target=settings.quality==='low'?Math.min(settings.particles,55):settings.particles;while(stars.length<target)stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight*.48,r:Math.random()*1.7+.5,p:Math.random()*6.28,speed:.04+Math.random()*.14});stars.length=target;volume()}
-const tabs=[['audio','♫ Audio'],['graphics','◈ Graphics'],['performance','⚡ Performance'],['general','⚙ General']];
+function applySettings(){setMotion(settings.motion);fpsEl.hidden=!settings.showFps;const d=Math.min(devicePixelRatio||1,settings.quality==='low'?1:settings.quality==='medium'?1.5:2);canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);ctx.setTransform(d,0,0,d,0,0);const target=settings.quality==='low'?55:105;while(stars.length<target)stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight*.48,r:Math.random()*1.7+.5,p:Math.random()*6.28,speed:.04+Math.random()*.14});stars.length=target;volume()}
 const row=(key,label,desc,control)=>'<label class="settings-row"><span><strong>'+label+'</strong><small>'+desc+'</small></span><span class="settings-control">'+control+'</span></label>';
 const range=(key,min,max,unit='%')=>'<input aria-label="'+key+'" data-setting="'+key+'" type="range" min="'+min+'" max="'+max+'" step="1" value="'+settings[key]+'"><output class="settings-value" data-value="'+key+'">'+settings[key]+unit+'</output>';
 const toggle=key=>'<input aria-label="'+key+'" data-setting="'+key+'" type="checkbox" '+(settings[key]?'checked':'')+'>';
 const select=(key,values)=>'<select aria-label="'+key+'" data-setting="'+key+'">'+values.map(([v,l])=>'<option value="'+v+'" '+(String(settings[key])===String(v)?'selected':'')+'>'+l+'</option>').join('')+'</select>';
-function tabContents(){switch(settingsTab){
-case 'audio':return '<div class="settings-section-title">Sound mixer</div>'+row('master','Master volume','Overall sound level',range('master',0,100))+row('music','Music volume','Menu soundtrack',range('music',0,100))+row('sfx','UI sound effects','Button feedback',range('sfx',0,100))+row('musicOn','Menu music','Play your custom soundtrack on repeat',toggle('musicOn'))+row('mute','Mute all','Silence music and sound effects',toggle('mute'))+'<p class="music-hint">♫ Custom soundtrack: Nirvana · <span id="music-status">Music begins after your first click. Browser autoplay rules apply.</span></p>';
-case 'graphics':return '<div class="settings-section-title">Appearance</div>'+row('quality','Render quality','Controls canvas resolution',select('quality',[['low','Low'],['medium','Medium'],['high','High']]))+row('particles','Star density','Number of visible stars',range('particles',20,200,''))+row('glow','Atmospheric glow','Soft purple vignette',toggle('glow'))+row('parallax','Mountain parallax','Subtle motion of mountain layers',toggle('parallax'));
-case 'performance':return '<div class="settings-section-title">Performance</div>'+row('fps','FPS limit','Maximum background animation refresh',select('fps',[[30,'30 FPS'],[60,'60 FPS'],[120,'120 FPS'],[144,'144 FPS'],[240,'240 FPS']]))+row('showFps','Show FPS','Live background-render FPS counter',toggle('showFps'))+row('motion','Animations','Turn off moving stars and scenery',toggle('motion'))+'<p class="music-hint">FPS limit affects this menu animation, not your monitor refresh rate. Actual FPS depends on your device.</p>';
-default:return '<div class="settings-section-title">General</div>'+row('motion','Animated menu','Enable ambient animations',toggle('motion'))+row('musicOn','Background music','Play music while in the menu',toggle('musicOn'))+row('showFps','FPS counter','Show animation performance',toggle('showFps'))}}
-function renderSettings(){const modal=document.querySelector('.modal');modal.classList.add('settings-modal');title.textContent='';body.innerHTML='<div class="settings-head"><h2>SETTINGS</h2><p>Customize your Rolling Sky Create experience</p></div><nav class="settings-tabs" role="tablist">'+tabs.map(([id,label])=>'<button class="settings-tab" role="tab" aria-selected="'+(settingsTab===id)+'" data-tab="'+id+'">'+label+'</button>').join('')+'</nav><div class="settings-content">'+tabContents()+'</div><div class="settings-foot"><button id="reset-settings">Reset defaults</button><button id="done-settings">Done ✓</button></div>';
-body.querySelectorAll('[data-tab]').forEach(el=>el.onclick=()=>{settingsTab=el.dataset.tab;uiSound();renderSettings()});
-body.querySelectorAll('[data-setting]').forEach(el=>{const key=el.dataset.setting;const change=()=>{settings[key]=el.type==='checkbox'?el.checked:el.type==='range'||key==='fps'?Number(el.value):el.value;const output=body.querySelector('[data-value="'+key+'"]');if(output)output.textContent=settings[key]+(key==='particles'?'':'%');save();applySettings();if(key==='musicOn'&&settings.musicOn)startAudio()};el.addEventListener(el.type==='range'?'input':'change',change)});
-body.querySelector('#reset-settings').onclick=()=>{settings={...defaults};save();applySettings();volume();renderSettings();uiSound()};
+function tabContents(){return '<div class="settings-section-title">AUDIO</div>'+
+row('music','Music volume','Adjust the menu soundtrack',range('music',0,100))+
+row('master','Master volume','Adjust overall sound',range('master',0,100))+
+row('musicOn','Menu music','Play Nirvana in the background',toggle('musicOn'))+
+'<p class="music-hint" id="music-status"></p>'+
+'<div class="settings-section-title settings-divider">GRAPHICS</div>'+
+row('quality','Graphics quality','Change star rendering resolution',select('quality',[['low','Low'],['medium','Medium'],['high','High']]))+
+row('motion','Background animation','Animate the stars and mountains',toggle('motion'))+
+'<div class="settings-section-title settings-divider">PERFORMANCE</div>'+
+row('fps','FPS limit','Limit the animated background frame rate',select('fps',[[30,'30 FPS'],[60,'60 FPS'],[120,'120 FPS'],[144,'144 FPS'],[240,'240 FPS']]))+
+row('showFps','Show FPS counter','Display the measured menu frame rate',toggle('showFps'))}
+function renderSettings(){const modal=document.querySelector('.modal');modal.classList.add('settings-modal');title.textContent='';body.innerHTML='<div class="settings-head"><h2>SETTINGS</h2><p>Rolling Sky Create</p></div><div class="settings-content">'+tabContents()+'</div><div class="settings-foot"><button id="reset-settings">Reset defaults</button><button id="done-settings">Done ✓</button></div>';
+updateMusicStatus();
+body.querySelectorAll('[data-setting]').forEach(el=>{const key=el.dataset.setting;const change=()=>{settings[key]=el.type==='checkbox'?el.checked:el.type==='range'||key==='fps'?Number(el.value):el.value;const output=body.querySelector('[data-value="'+key+'"]');if(output)output.textContent=settings[key]+'%';save();applySettings();if(key==='musicOn'&&settings.musicOn)startAudio()};el.addEventListener(el.type==='range'?'input':'change',change)});
+body.querySelector('#reset-settings').onclick=()=>{settings={...defaults};save();applySettings();renderSettings();uiSound()};
 body.querySelector('#done-settings').onclick=()=>{uiSound();closeModal()}}
 const originalClose=closeModal;closeModal=function(){document.querySelector('.modal').classList.remove('settings-modal');originalClose()};
 document.getElementById('settings').onclick=()=>{startAudio();uiSound();openModal('Settings','');renderSettings()};
