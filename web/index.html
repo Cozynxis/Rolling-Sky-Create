@@ -145,17 +145,18 @@ document.getElementById('close').onclick=closeModal;shade.addEventListener('clic
 document.getElementById('play').onclick=()=>openModal('Play','<p>The playable 3D levels are coming in a future update. This is the new main-menu preview.</p><button onclick="closeModal()">Back to menu</button>');
 document.getElementById('editor').onclick=()=>openModal('Featured Levels','<p>Featured levels are coming soon. Discover hand-picked community levels here.</p><button onclick="closeModal()">Back to menu</button>');
 
-const defaults={master:75,music:70,mute:false,musicOn:true,quality:'high',fps:60,showFps:false,motion:true};
+const defaults={master:75,music:70,musicOn:true,quality:'high',fps:60,showFps:false,motion:true};
 let settings={...defaults};try{const stored=JSON.parse(localStorage.getItem('rsc-settings')||'{}');for(const k of Object.keys(defaults)){if(typeof stored[k]===typeof defaults[k])settings[k]=stored[k]}}catch{}
 const scene=document.querySelector('.scene'),fpsEl=document.getElementById('fps-display');
 let lastFrame=0,fpsSamples=[],fpsTicks=0,audioContext=null,masterGain=null,sfxGain=null,activeMusic=false;
-const menuMusic=new Audio('./assets/menu-music.mp3');menuMusic.loop=true;menuMusic.preload='auto';
+const menuMusic=new Audio();menuMusic.loop=true;menuMusic.preload='auto';
+const musicCandidates=['./assets/Nirvana.mp3','./assets/nirvana.mp3','./assets/12.%20Nirvana.mp3','./assets/menu-music.mp3'];let musicCandidateIndex=0;menuMusic.src=musicCandidates[0];
 let soundtrackAvailable=true;
-menuMusic.addEventListener('error',()=>{soundtrackAvailable=false;updateMusicStatus()});
-menuMusic.addEventListener('canplay',()=>{soundtrackAvailable=true;updateMusicStatus()});
-function updateMusicStatus(){const el=document.querySelector('#music-status');if(el)el.textContent=soundtrackAvailable?'Nirvana · starts after your first click.':'Nirvana MP3 not found. Add web/assets/menu-music.mp3 to the repository.'}
+menuMusic.addEventListener('error',()=>{if(++musicCandidateIndex<musicCandidates.length){menuMusic.src=musicCandidates[musicCandidateIndex];menuMusic.load();if(activeMusic)menuMusic.play().catch(()=>{});}else{soundtrackAvailable=false;updateMusicStatus()}});
+menuMusic.addEventListener('canplay',()=>{soundtrackAvailable=true;updateMusicStatus();if(activeMusic&&settings.musicOn&&menuMusic.paused)menuMusic.play().catch(()=>{})});
+function updateMusicStatus(){const el=document.querySelector('#music-status');if(el)el.textContent=soundtrackAvailable?'Nirvana · click once to start playback.':'Nirvana not found on the published branch. Check the file name and GitHub Pages deployment.'}
 function save(){try{localStorage.setItem('rsc-settings',JSON.stringify(settings))}catch{}}
-function volume(){if(audioContext){masterGain.gain.setTargetAtTime(settings.mute?0:settings.master/100,audioContext.currentTime,.035)}menuMusic.volume=Math.max(0,Math.min(1,(settings.mute?0:settings.master/100)*(settings.music/100)));if(!settings.musicOn)menuMusic.pause();else if(activeMusic&&soundtrackAvailable&&menuMusic.paused)menuMusic.play().catch(()=>{})}
+function volume(){if(audioContext){masterGain.gain.setTargetAtTime(settings.master/100,audioContext.currentTime,.035)}menuMusic.volume=Math.max(0,Math.min(1,(settings.master/100)*(settings.music/100)));if(!settings.musicOn)menuMusic.pause();else if(activeMusic&&soundtrackAvailable&&menuMusic.paused)menuMusic.play().catch(()=>{})}
 function startAudio(){activeMusic=true;try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioContext.createGain();sfxGain=audioContext.createGain();sfxGain.connect(masterGain);masterGain.connect(audioContext.destination)}audioContext.resume()}catch(e){console.warn('Audio unavailable',e)}volume()}
 function playTone(freq,when,duration,gain,type='sine',target=sfxGain){if(!audioContext||!target)return;const osc=audioContext.createOscillator(),env=audioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,when);env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),when+.025);env.gain.exponentialRampToValueAtTime(.0001,when+duration);osc.connect(env);env.connect(target);osc.start(when);osc.stop(when+duration+.03)}
 function uiSound(){if(!audioContext||audioContext.state!=='running')return;playTone(660,audioContext.currentTime,.09,.04,'sine',sfxGain)}
@@ -166,16 +167,16 @@ const range=(key,min,max,unit='%')=>'<input aria-label="'+key+'" data-setting="'
 const toggle=key=>'<input aria-label="'+key+'" data-setting="'+key+'" type="checkbox" '+(settings[key]?'checked':'')+'>';
 const select=(key,values)=>'<select aria-label="'+key+'" data-setting="'+key+'">'+values.map(([v,l])=>'<option value="'+v+'" '+(String(settings[key])===String(v)?'selected':'')+'>'+l+'</option>').join('')+'</select>';
 function tabContents(){return '<div class="settings-section-title">AUDIO</div>'+
-row('music','Music volume','Adjust the menu soundtrack',range('music',0,100))+
-row('master','Master volume','Adjust overall sound',range('master',0,100))+
+row('music','Music volume','Volume of the Nirvana menu soundtrack',range('music',0,100))+
+row('master','Master volume','Overall game audio level',range('master',0,100))+
 row('musicOn','Menu music','Play Nirvana in the background',toggle('musicOn'))+
 '<p class="music-hint" id="music-status"></p>'+
 '<div class="settings-section-title settings-divider">GRAPHICS</div>'+
-row('quality','Graphics quality','Change star rendering resolution',select('quality',[['low','Low'],['medium','Medium'],['high','High']]))+
-row('motion','Background animation','Animate the stars and mountains',toggle('motion'))+
+row('quality','Graphics quality','Game rendering preset (menu preview supported)',select('quality',[['low','Low'],['medium','Medium'],['high','High']]))+
+row('motion','Animations','Enable game and menu animations',toggle('motion'))+
 '<div class="settings-section-title settings-divider">PERFORMANCE</div>'+
-row('fps','FPS limit','Limit the animated background frame rate',select('fps',[[30,'30 FPS'],[60,'60 FPS'],[120,'120 FPS'],[144,'144 FPS'],[240,'240 FPS']]))+
-row('showFps','Show FPS counter','Display the measured menu frame rate',toggle('showFps'))}
+row('fps','FPS limit','Target FPS for gameplay (currently applies to menu)',select('fps',[[30,'30 FPS'],[60,'60 FPS'],[120,'120 FPS'],[144,'144 FPS'],[240,'240 FPS']]))+
+row('showFps','Show FPS counter','Display live FPS while playing',toggle('showFps'))}
 function renderSettings(){const modal=document.querySelector('.modal');modal.classList.add('settings-modal');title.textContent='';body.innerHTML='<div class="settings-head"><h2>SETTINGS</h2><p>Rolling Sky Create</p></div><div class="settings-content">'+tabContents()+'</div><div class="settings-foot"><button id="reset-settings">Reset defaults</button><button id="done-settings">Done ✓</button></div>';
 updateMusicStatus();
 body.querySelectorAll('[data-setting]').forEach(el=>{const key=el.dataset.setting;const change=()=>{settings[key]=el.type==='checkbox'?el.checked:el.type==='range'||key==='fps'?Number(el.value):el.value;const output=body.querySelector('[data-value="'+key+'"]');if(output)output.textContent=settings[key]+'%';save();applySettings();if(key==='musicOn'&&settings.musicOn)startAudio()};el.addEventListener(el.type==='range'?'input':'change',change)});
