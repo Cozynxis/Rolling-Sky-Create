@@ -26,6 +26,39 @@
 .setting{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:14px 0;border-top:1px solid #ffffff20}.setting input{accent-color:#bc86eb}
 @media(max-width:600px){.logo{margin-top:8vh;font-size:clamp(34px,9.2vw,58px)}.play{margin-top:8vh}.mountains{height:78%}}
 @media(prefers-reduced-motion:reduce){.mountains{animation:none}.play{transition:none}}
+
+/* Gentle motion upgrade: preserve the original layout and palette */
+.scene{background-size:115% 115%;animation:skyBreath 18s ease-in-out infinite alternate}
+@keyframes skyBreath{0%{background-position:48% 44%}100%{background-position:55% 52%}}
+.mountain-back{animation:mountainDriftBack 16s ease-in-out infinite alternate;transform-origin:center bottom}
+.mountain-mid{animation:mountainDriftMid 12s ease-in-out infinite alternate;transform-origin:center bottom}
+.mountain-front{animation:mountainDriftFront 9s ease-in-out infinite alternate;transform-origin:center bottom}
+@keyframes mountainDriftBack{from{transform:translateX(-8px) translateY(0)}to{transform:translateX(9px) translateY(5px)}}
+@keyframes mountainDriftMid{from{transform:translateX(7px) translateY(3px)}to{transform:translateX(-8px) translateY(-3px)}}
+@keyframes mountainDriftFront{from{transform:translateX(-4px)}to{transform:translateX(5px) translateY(3px)}}
+.logo{animation:logoAppear .95s cubic-bezier(.2,.8,.2,1) both}
+@keyframes logoAppear{from{opacity:0;transform:translateY(-16px);filter:blur(5px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+.logo .spark{animation:sparkTwinkle 4s ease-in-out infinite}
+@keyframes sparkTwinkle{0%,100%{opacity:.65;transform:rotate(20deg) scale(.9)}50%{opacity:1;transform:rotate(65deg) scale(1.2)}}
+.play{position:relative;isolation:isolate;animation:playFloat 3.8s ease-in-out infinite;transition:scale .28s cubic-bezier(.2,.9,.2,1),background .28s,box-shadow .28s}
+.play:before{content:"";position:absolute;inset:-11px;border:2px solid rgba(207,151,255,.38);border-radius:50%;opacity:.7;animation:playRing 3.8s ease-in-out infinite;pointer-events:none}
+.play:after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 25%,rgba(193,128,245,.25),transparent 60%);pointer-events:none}
+.play svg{position:relative;z-index:1;transition:transform .25s ease}
+.play:hover{scale:1.1;transform:none;background:#1d1027;box-shadow:0 10px 50px #c084fc80}
+.play:hover svg{transform:translateX(3px) scale(1.09)}
+.play:active{scale:.94}
+@keyframes playFloat{0%,100%{translate:0 0}50%{translate:0 -7px}}
+@keyframes playRing{0%,100%{transform:scale(.96);opacity:.35}50%{transform:scale(1.055);opacity:.8}}
+.corner{transition:transform .28s cubic-bezier(.2,.8,.2,1),background .25s,box-shadow .25s;animation:cornerAppear .8s ease-out both}
+.corner.right{animation-delay:.12s}
+.corner:hover{transform:translateY(-5px) rotate(8deg) scale(1.1);background:#2b173a;box-shadow:0 8px 28px #c084fc77}
+.corner:active{transform:scale(.92)}
+@keyframes cornerAppear{from{opacity:0;translate:0 16px}to{opacity:1;translate:0 0}}
+.modal{animation:modalPop .25s cubic-bezier(.2,.85,.2,1) both}
+@keyframes modalPop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.scene.motion-off,.scene.motion-off .mountains,.scene.motion-off .mountains path,.scene.motion-off .logo,.scene.motion-off .spark,.scene.motion-off .play,.scene.motion-off .play:before,.scene.motion-off .corner{animation:none!important;transition:none!important}
+@media(prefers-reduced-motion:reduce){.scene,.mountains,.mountains path,.logo,.logo .spark,.play,.play:before,.corner,.modal{animation:none!important;transition:none!important}}
+
 </style>
 </head>
 <body>
@@ -42,16 +75,16 @@
 </main>
 <div class="modal-shade" id="shade" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="close" id="close" aria-label="Close">×</button><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
 <script>
-const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');let stars=[],animation=true,frame=0;
-function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);ctx.setTransform(d,0,0,d,0,0);stars=Array.from({length:90},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight*.48,r:Math.random()*1.7+.5,p:Math.random()*6.28}));draw()}
-function draw(){ctx.clearRect(0,0,innerWidth,innerHeight);for(const s of stars){const a=animation?.5+.5*Math.sin(frame*.018+s.p):.85;ctx.fillStyle='rgba(255,240,255,'+a+')';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();if(s.r>1.5){ctx.globalAlpha=a*.5;ctx.fillRect(s.x-3,s.y-.35,6,.7);ctx.fillRect(s.x-.35,s.y-3,.7,6);ctx.globalAlpha=1}}if(animation){frame++;requestAnimationFrame(draw)}}
-addEventListener('resize',resize);resize();
+const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');let stars=[],animation=!matchMedia('(prefers-reduced-motion: reduce)').matches,frame=0,raf=0;document.querySelector('.scene').classList.toggle('motion-off',!animation);
+function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);ctx.setTransform(d,0,0,d,0,0);stars=Array.from({length:105},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight*.48,r:Math.random()*1.7+.5,p:Math.random()*6.28,speed:.04+Math.random()*.14}));if(!animation)draw()}
+function draw(){ctx.clearRect(0,0,innerWidth,innerHeight);for(const s of stars){const a=animation?.5+.5*Math.sin(frame*.018+s.p):.85;if(animation){s.y-=s.speed;if(s.y<0){s.y=innerHeight*.48;s.x=Math.random()*innerWidth}}ctx.fillStyle='rgba(255,240,255,'+a+')';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();if(s.r>1.5){ctx.globalAlpha=a*.5;ctx.fillRect(s.x-3,s.y-.35,6,.7);ctx.fillRect(s.x-.35,s.y-3,.7,6);ctx.globalAlpha=1}}if(animation){frame++;raf=requestAnimationFrame(draw)}}
+addEventListener('resize',resize);resize();if(animation)raf=requestAnimationFrame(draw);
 const shade=document.getElementById('shade'),title=document.getElementById('modal-title'),body=document.getElementById('modal-body');
 function openModal(t,html){title.textContent=t;body.innerHTML=html;shade.classList.add('open');document.getElementById('close').focus()}
 function closeModal(){shade.classList.remove('open')}
 document.getElementById('close').onclick=closeModal;shade.addEventListener('click',e=>{if(e.target===shade)closeModal()});addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 document.getElementById('play').onclick=()=>openModal('Play','<p>The playable 3D levels are coming in a future update. This is the new main-menu preview.</p><button onclick="closeModal()">Back to menu</button>');
 document.getElementById('editor').onclick=()=>openModal('Level Editor','<p>The level editor is under development. You will be able to build and test your own levels here.</p><button onclick="closeModal()">Back to menu</button>');
-document.getElementById('settings').onclick=()=>{openModal('Settings','<label class="setting">Animated stars <input type="checkbox" id="animate" '+(animation?'checked':'')+'></label><button onclick="closeModal()">Done</button>');document.getElementById('animate').onchange=e=>{const was=animation;animation=e.target.checked;if(animation&&!was)requestAnimationFrame(draw);else draw()}};
+document.getElementById('settings').onclick=()=>{openModal('Settings','<label class="setting">Animated stars <input type="checkbox" id="animate" '+(animation?'checked':'')+'></label><button onclick="closeModal()">Done</button>');document.getElementById('animate').onchange=e=>{const was=animation;animation=e.target.checked;document.querySelector('.scene').classList.toggle('motion-off',!animation);if(animation&&!was){cancelAnimationFrame(raf);raf=requestAnimationFrame(draw)}else if(!animation){cancelAnimationFrame(raf);draw()}}};
 </script>
 </body></html>
