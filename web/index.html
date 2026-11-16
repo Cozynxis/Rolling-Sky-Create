@@ -57,8 +57,33 @@
 .modal{animation:modalPop .25s cubic-bezier(.2,.85,.2,1) both}
 @keyframes modalPop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .scene.motion-off,.scene.motion-off .mountains,.scene.motion-off .mountains path,.scene.motion-off .logo,.scene.motion-off .spark,.scene.motion-off .play,.scene.motion-off .play:before,.scene.motion-off .corner{animation:none!important;transition:none!important}
-@media(prefers-reduced-motion:reduce){.scene,.mountains,.mountains path,.logo,.logo .spark,.play,.play:before,.corner,.modal{animation:none!important;transition:none!important}}
+.scene.no-parallax .mountains path{animation:none!important}.scene.no-glow:before{opacity:0}@media(prefers-reduced-motion:reduce){.scene,.mountains,.mountains path,.logo,.logo .spark,.play,.play:before,.corner,.modal{animation:none!important;transition:none!important}}
 
+
+/* Settings panel — same purple silhouette aesthetic */
+.modal.settings-modal{width:min(680px,96vw);max-height:min(86vh,760px);overflow:auto;padding:0;background:linear-gradient(160deg,#281734,#170e23);border:1px solid #9d79b4;scrollbar-color:#80569a #24152f}
+.settings-head{padding:27px 30px 19px;border-bottom:1px solid #ffffff21;position:sticky;top:0;background:#24142ff2;z-index:2;backdrop-filter:blur(12px)}
+.settings-head h2{font-size:30px;letter-spacing:.05em;margin:0 0 4px;font-weight:300}
+.settings-head p{margin:0;font-size:13px}
+.settings-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid #ffffff19}
+.settings-tab{flex:1;min-width:90px;background:transparent!important;border:1px solid transparent!important;border-radius:12px!important;padding:10px 7px!important;color:#cdb9dc!important;transition:background .2s,color .2s}
+.settings-tab:hover,.settings-tab[aria-selected=true]{background:#7b4a9a55!important;border-color:#ae79c966!important;color:white!important}
+.settings-content{padding:6px 30px 20px}
+.settings-section-title{font-size:12px;text-transform:uppercase;letter-spacing:.15em;color:#c89de0;margin:20px 0 6px}
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 0;border-bottom:1px solid #ffffff17}
+.settings-row strong{display:block;font-weight:500;font-size:15px}.settings-row small{display:block;color:#bba8c9;margin-top:5px;line-height:1.4}
+.settings-row input[type=range]{width:min(195px,37vw);accent-color:#b783d9;cursor:pointer}
+.settings-row select{background:#160d20;color:white;border:1px solid #8a60a4;border-radius:9px;padding:9px;max-width:160px}
+.settings-row input[type=checkbox]{appearance:none;width:43px;height:25px;background:#4a355a;border-radius:20px;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.settings-row input[type=checkbox]:before{content:"";position:absolute;top:4px;left:4px;width:17px;height:17px;background:#eee;border-radius:50%;transition:transform .2s}
+.settings-row input[type=checkbox]:checked{background:#a46bc6}.settings-row input[type=checkbox]:checked:before{transform:translateX(18px)}
+.settings-value{font-size:12px;color:#e1c1f2;min-width:40px;text-align:right}
+.settings-control{display:flex;align-items:center;gap:8px}
+.settings-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 30px 25px}
+.settings-foot button{border:1px solid #9b6db7;background:#6f448b;border-radius:12px;padding:12px 20px;transition:filter .2s}.settings-foot button:hover{filter:brightness(1.2)}
+.music-hint{font-size:12px;color:#c9b1d8;margin:0 30px 10px;line-height:1.5}
+.fps-display{position:fixed;right:15px;top:12px;z-index:9;font:13px monospace;color:#e7c8ff;background:#160b25a8;padding:6px 9px;border-radius:8px;pointer-events:none}
+@media(max-width:540px){.settings-head{padding:22px 18px 15px}.settings-content{padding:5px 18px 16px}.settings-tabs{padding:10px}.settings-foot{padding:14px 18px 20px}.settings-row{gap:9px}.settings-row strong{font-size:13px}.settings-row small{font-size:11px}.settings-row input[type=range]{width:100px}.settings-row select{max-width:120px}}
 </style>
 </head>
 <body>
@@ -73,7 +98,7 @@
 <button class="corner left" id="settings" title="Settings" aria-label="Settings">⚙</button>
 <button class="corner right" id="editor" title="Level editor" aria-label="Level editor">▦</button>
 </main>
-<div class="modal-shade" id="shade" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="close" id="close" aria-label="Close">×</button><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
+<div class="fps-display" id="fps-display" hidden>-- FPS</div><div class="modal-shade" id="shade" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="close" id="close" aria-label="Close">×</button><h2 id="modal-title"></h2><div id="modal-body"></div></section></div>
 <script>
 const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');let stars=[],animation=!matchMedia('(prefers-reduced-motion: reduce)').matches,frame=0,raf=0;document.querySelector('.scene').classList.toggle('motion-off',!animation);
 function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);ctx.setTransform(d,0,0,d,0,0);stars=Array.from({length:105},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight*.48,r:Math.random()*1.7+.5,p:Math.random()*6.28,speed:.04+Math.random()*.14}));if(!animation)draw()}
@@ -85,6 +110,42 @@ function closeModal(){shade.classList.remove('open')}
 document.getElementById('close').onclick=closeModal;shade.addEventListener('click',e=>{if(e.target===shade)closeModal()});addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 document.getElementById('play').onclick=()=>openModal('Play','<p>The playable 3D levels are coming in a future update. This is the new main-menu preview.</p><button onclick="closeModal()">Back to menu</button>');
 document.getElementById('editor').onclick=()=>openModal('Level Editor','<p>The level editor is under development. You will be able to build and test your own levels here.</p><button onclick="closeModal()">Back to menu</button>');
-document.getElementById('settings').onclick=()=>{openModal('Settings','<label class="setting">Animated stars <input type="checkbox" id="animate" '+(animation?'checked':'')+'></label><button onclick="closeModal()">Done</button>');document.getElementById('animate').onchange=e=>{const was=animation;animation=e.target.checked;document.querySelector('.scene').classList.toggle('motion-off',!animation);if(animation&&!was){cancelAnimationFrame(raf);raf=requestAnimationFrame(draw)}else if(!animation){cancelAnimationFrame(raf);draw()}}};
+
+const defaults={master:70,music:55,sfx:65,mute:false,musicOn:true,quality:'high',fps:60,showFps:false,particles:105,motion:true,parallax:true,glow:true};
+let settings={...defaults};try{const stored=JSON.parse(localStorage.getItem('rsc-settings')||'{}');for(const k of Object.keys(defaults)){if(typeof stored[k]===typeof defaults[k])settings[k]=stored[k]}}catch{}
+const scene=document.querySelector('.scene'),fpsEl=document.getElementById('fps-display');
+let lastFrame=0,fpsSamples=[],fpsTicks=0,settingsTab='audio',audioContext=null,musicGain=null,masterGain=null,sfxGain=null,musicTimer=null,nextNote=0,noteIndex=0,activeMusic=false;
+const melody=[0,3,7,10,7,3,5,8,12,8,5,3,0,5,7,10,12,10,7,5,3,7,10,15,12,10,7,5,0,3,7,10];
+const bass=[0,0,-2,-2,-4,-4,-2,-2];
+function save(){try{localStorage.setItem('rsc-settings',JSON.stringify(settings))}catch{}}
+function volume(){if(!audioContext)return;masterGain.gain.setTargetAtTime(settings.mute?0:settings.master/100,audioContext.currentTime,.035);musicGain.gain.setTargetAtTime(settings.musicOn?settings.music/100:0,audioContext.currentTime,.035);sfxGain.gain.setTargetAtTime(settings.sfx/100,audioContext.currentTime,.035)}
+function startAudio(){try{if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioContext.createGain();musicGain=audioContext.createGain();sfxGain=audioContext.createGain();musicGain.connect(masterGain);sfxGain.connect(masterGain);masterGain.connect(audioContext.destination);nextNote=audioContext.currentTime+.06}audioContext.resume();volume();if(!musicTimer){musicTimer=setInterval(scheduleMusic,100);scheduleMusic()}activeMusic=true}catch(e){console.warn('Audio unavailable',e)}}
+function playTone(freq,when,duration,gain,type='sine',target=musicGain){if(!audioContext||!target)return;const osc=audioContext.createOscillator(),env=audioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,when);env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),when+.025);env.gain.exponentialRampToValueAtTime(.0001,when+duration);osc.connect(env);env.connect(target);osc.start(when);osc.stop(when+duration+.03)}
+function scheduleMusic(){if(!audioContext||audioContext.state!=='running')return;const beat=.32;while(nextNote<audioContext.currentTime+.45){const step=noteIndex%melody.length,root=220;const semitone=melody[step];playTone(root*Math.pow(2,semitone/12),nextNote,beat*.85,.095,'triangle');if(step%2===0)playTone(110*Math.pow(2,bass[Math.floor(noteIndex/4)%bass.length]/12),nextNote,beat*1.7,.07,'sine');if(step%4===0)playTone(440*Math.pow(2,melody[step]/12),nextNote,beat*2.8,.024,'sine');nextNote+=beat;noteIndex++}}
+function uiSound(){if(!audioContext||audioContext.state!=='running')return;playTone(660,audioContext.currentTime,.09,.06,'sine',sfxGain)}
+function setMotion(v){animation=v&&!matchMedia('(prefers-reduced-motion: reduce)').matches;scene.classList.toggle('motion-off',!animation);cancelAnimationFrame(raf);if(animation)raf=requestAnimationFrame(draw);else draw()}
+function applySettings(){setMotion(settings.motion);scene.classList.toggle('no-parallax',!settings.parallax);scene.classList.toggle('no-glow',!settings.glow);fpsEl.hidden=!settings.showFps;const d= Math.min(devicePixelRatio||1,settings.quality==='low'?1:settings.quality==='medium'?1.5:2);canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);ctx.setTransform(d,0,0,d,0,0);const target=settings.quality==='low'?Math.min(settings.particles,55):settings.particles;while(stars.length<target)stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight*.48,r:Math.random()*1.7+.5,p:Math.random()*6.28,speed:.04+Math.random()*.14});stars.length=target;volume()}
+const tabs=[['audio','♫ Audio'],['graphics','◈ Graphics'],['performance','⚡ Performance'],['general','⚙ General']];
+const row=(key,label,desc,control)=>'<label class="settings-row"><span><strong>'+label+'</strong><small>'+desc+'</small></span><span class="settings-control">'+control+'</span></label>';
+const range=(key,min,max,unit='%')=>'<input aria-label="'+key+'" data-setting="'+key+'" type="range" min="'+min+'" max="'+max+'" step="1" value="'+settings[key]+'"><output class="settings-value" data-value="'+key+'">'+settings[key]+unit+'</output>';
+const toggle=key=>'<input aria-label="'+key+'" data-setting="'+key+'" type="checkbox" '+(settings[key]?'checked':'')+'>';
+const select=(key,values)=>'<select aria-label="'+key+'" data-setting="'+key+'">'+values.map(([v,l])=>'<option value="'+v+'" '+(String(settings[key])===String(v)?'selected':'')+'>'+l+'</option>').join('')+'</select>';
+function tabContents(){switch(settingsTab){
+case 'audio':return '<div class="settings-section-title">Sound mixer</div>'+row('master','Master volume','Overall sound level',range('master',0,100))+row('music','Music volume','Menu soundtrack',range('music',0,100))+row('sfx','UI sound effects','Button feedback',range('sfx',0,100))+row('musicOn','Menu music','Play the original looping menu melody',toggle('musicOn'))+row('mute','Mute all','Silence music and sound effects',toggle('mute'))+'<p class="music-hint">♫ Original synthesized menu track. Click anywhere to enable audio (browser autoplay policy).</p>';
+case 'graphics':return '<div class="settings-section-title">Appearance</div>'+row('quality','Render quality','Controls canvas resolution',select('quality',[['low','Low'],['medium','Medium'],['high','High']]))+row('particles','Star density','Number of visible stars',range('particles',20,200,''))+row('glow','Atmospheric glow','Soft purple vignette',toggle('glow'))+row('parallax','Mountain parallax','Subtle motion of mountain layers',toggle('parallax'));
+case 'performance':return '<div class="settings-section-title">Performance</div>'+row('fps','FPS limit','Maximum background animation refresh',select('fps',[[30,'30 FPS'],[60,'60 FPS'],[120,'120 FPS'],[144,'144 FPS'],[240,'240 FPS']]))+row('showFps','Show FPS','Live background-render FPS counter',toggle('showFps'))+row('motion','Animations','Turn off moving stars and scenery',toggle('motion'))+'<p class="music-hint">FPS limit affects this menu animation, not your monitor refresh rate. Actual FPS depends on your device.</p>';
+default:return '<div class="settings-section-title">General</div>'+row('motion','Animated menu','Enable ambient animations',toggle('motion'))+row('musicOn','Background music','Play music while in the menu',toggle('musicOn'))+row('showFps','FPS counter','Show animation performance',toggle('showFps'))}}
+function renderSettings(){const modal=document.querySelector('.modal');modal.classList.add('settings-modal');title.textContent='';body.innerHTML='<div class="settings-head"><h2>SETTINGS</h2><p>Customize your Rolling Sky Create experience</p></div><nav class="settings-tabs" role="tablist">'+tabs.map(([id,label])=>'<button class="settings-tab" role="tab" aria-selected="'+(settingsTab===id)+'" data-tab="'+id+'">'+label+'</button>').join('')+'</nav><div class="settings-content">'+tabContents()+'</div><div class="settings-foot"><button id="reset-settings">Reset defaults</button><button id="done-settings">Done ✓</button></div>';
+body.querySelectorAll('[data-tab]').forEach(el=>el.onclick=()=>{settingsTab=el.dataset.tab;uiSound();renderSettings()});
+body.querySelectorAll('[data-setting]').forEach(el=>{const key=el.dataset.setting;const change=()=>{settings[key]=el.type==='checkbox'?el.checked:el.type==='range'||key==='fps'?Number(el.value):el.value;const output=body.querySelector('[data-value="'+key+'"]');if(output)output.textContent=settings[key]+(key==='particles'?'':'%');save();applySettings();if(key==='musicOn'&&settings.musicOn)startAudio()};el.addEventListener(el.type==='range'?'input':'change',change)});
+body.querySelector('#reset-settings').onclick=()=>{settings={...defaults};save();applySettings();volume();renderSettings();uiSound()};
+body.querySelector('#done-settings').onclick=()=>{uiSound();closeModal()}}
+const originalClose=closeModal;closeModal=function(){document.querySelector('.modal').classList.remove('settings-modal');originalClose()};
+document.getElementById('settings').onclick=()=>{startAudio();uiSound();openModal('Settings','');renderSettings()};
+document.getElementById('play').addEventListener('click',()=>{startAudio();uiSound()});
+document.getElementById('editor').addEventListener('click',()=>{startAudio();uiSound()});
+document.addEventListener('pointerdown',()=>{if(!activeMusic)startAudio()},{once:true});
+applySettings();
+
 </script>
 </body></html>
